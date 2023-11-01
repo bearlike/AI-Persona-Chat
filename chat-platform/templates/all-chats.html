@@ -1,0 +1,20 @@
+<!-- all-chats.html -->
+
+<h1>All Active Conversations</h1>
+
+<table border="1">
+    <tr>
+        <th>Chat ID</th>
+        <th>From User</th>
+        <th>To User</th>
+        <th>Chat Link</th>
+    </tr>
+    {% for chat in chat_list %}
+    <tr>
+        <td>{{ chat.chat_id }}</td>
+        <td>{{ chat.fromUser }}</td>
+        <td>{{ chat.toUser }}</td>
+        <td><a href="{{ chat.chat_link }}">Go to Chat</a></td>
+    </tr>
+    {% endfor %}
+</table>
