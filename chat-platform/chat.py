@@ -1,12 +1,13 @@
 #!/usr/bin/python3
-from flask import Flask, render_template, request, url_for
+from flask import Flask, render_template, request, url_for, jsonify
 from datetime import datetime
 import csv
 import os
 import logging
 import json
 
-logging.basicConfig(filename='chat.log', level=logging.DEBUG, encoding='utf-8')
+# logging.basicConfig(filename='chat.log', level=logging.DEBUG, encoding='utf-8')
+logging.basicConfig(level=logging.DEBUG, encoding='utf-8')
 
 app = Flask(__name__)
 CHAT_FOLDER = 'chats'
@@ -52,7 +53,7 @@ def message():
     toUser = request.args.get('toUser')
     if not fromUser or not toUser:
         return f"Missing fromUser or toUser in /messages (fromUser={fromUser}, toUser={toUser})", 400
-    chatID = f"{toUser}-{fromUser}"
+    chatID = chat_save_path(fromUser, toUser).replace('.csv', '')
     if request.method == 'POST':
         content = request.values.get('message_to_send')
         add_message(fromUser, toUser, chatID, content)
@@ -65,13 +66,36 @@ def message():
                            chats=get_chat(fromUser, toUser),
                            lenSideUsers=0)
 
+
+@app.route('/api/chat', methods=['GET', 'POST'])
+def api_message_chat():
+    fromUser = request.args.get('fromUser')
+    toUser = request.args.get('toUser')
+    
+    if not fromUser or not toUser:
+        return jsonify({"error": "Missing fromUser or toUser in /api/chat"}), 400
+    
+    chatID = chat_save_path(fromUser, toUser).replace('.csv', '')
+    
+    if request.method == 'POST':
+        content = request.values.get('message_to_send')
+        if content is not None:
+            add_message(fromUser, toUser, chatID, content)
+            return jsonify({"message": "Message added successfully"}), 200  # Return 201 for resource created
+        else:
+            return jsonify({"error": "Missing message_to_send in the request"}), 400
+    else:
+        return jsonify({"error": "No messages found for this chat"}), 404  # Return 404 if messages are not found
+
+
+
 @app.route('/chat', methods=['GET', 'POST'])
 def message_chat():
     fromUser = request.args.get('fromUser')
     toUser = request.args.get('toUser')
     if not fromUser or not toUser:
         return f"Missing fromUser or toUser in /chat (fromUser={fromUser}, toUser={toUser})", 400
-    chatID = f"{toUser}-{fromUser}"
+    chatID = chat_save_path(fromUser, toUser).replace('.csv', '')
     if request.method == 'POST':
         content = request.values.get('message_to_send')
         add_message(fromUser, toUser, chatID, content)
@@ -82,7 +106,7 @@ def message_chat():
                            fromUser_color=string_to_color(fromUser),
                            toUser=toUser,
                            fromUser=fromUser,
-                           chatID=chatID)
+                           chatID=chatID), 200
 
 @app.route('/', methods=['GET'])
 def all_chats():
